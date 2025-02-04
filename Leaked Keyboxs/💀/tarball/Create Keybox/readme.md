@@ -7,7 +7,6 @@
     1. **Google Serial:**
         - This serial is issued by Google.
         - It remains **constant** and is **never revoked**.
-        - If the Google serial were to be revoked, it would invalidate all keystores.
 
     2. **OEM Serial:**
         - This serial is issued by the OEM (Original Equipment Manufacturer).
