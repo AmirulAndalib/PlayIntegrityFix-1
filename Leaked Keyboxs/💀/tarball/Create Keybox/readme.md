@@ -11,10 +11,9 @@
     2. **OEM Serial:**
         - This serial is issued by the OEM (Original Equipment Manufacturer).
         - It is subject to **change** and is device-specific.
-        - I haven't yet observed an OEM serial being revoked.
+        - Rarely revoked...
 
     3. **Device Serial:**
-        - This serial is **revoked**.
         - It appears to be the primary serial that gets targeted for revocation actions.
 
     4. **User-Added/Manual Serial:**
