@@ -30,7 +30,7 @@ generate_ca_credentials() {
     
     echo "Creating self-signed root certificate..."
     openssl req -key "${CERT_AUTHORITY_PRIVATE}" -new -x509 -days "${VALIDITY_CA}" \
-        -subj "/CN=clevereetech/title=${SECURITY_TAG}" -out "${ROOT_CERTIFICATE}"
+        -subj "/CN=cleverestech/title=${SECURITY_TAG}" -out "${ROOT_CERTIFICATE}"
 }
 
 generate_device_credentials() {
