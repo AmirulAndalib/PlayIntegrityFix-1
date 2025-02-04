@@ -1,44 +1,99 @@
-# Telegram @cleverestech
+set -e
 
-DEVICE_ID="Device-$(openssl rand -hex 8)"
-TITLE="TEE"
+# ======================
+# Configuration
+# ======================
+readonly TARGET_DEVICE_ID="Device-$(openssl rand -hex 8)"
+readonly SECURITY_TAG="TEE"
+readonly VALIDITY_CA=3650   # 10-year validity for CA
+readonly VALIDITY_DEV=365   # 1-year validity for device cert
 
-CA_KEY="ca.key"
-CA_CRT="ca.crt"
-DEVICE_KEY="device.key"
-DEVICE_CSR="device.csr"
-DEVICE_CRT="device.crt"
-KEYBOX_XML="keybox.xml"
+# ======================
+# File Names
+# ======================
+readonly CERT_AUTHORITY_PRIVATE="ca.key"
+readonly ROOT_CERTIFICATE="ca.crt"
+readonly DEVICE_PRIVATE_KEY="device.key"
+readonly DEVICE_CSR_FILE="device.csr"
+readonly DEVICE_CERT_FILE="device.crt"
+readonly KEYBOX_FILE="keybox.xml"
 
-openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:prime256v1 -out $CA_KEY
-openssl req -x509 -new -key $CA_KEY -days 3650 -subj "/CN=cleverestech/title=$TITLE" -out $CA_CRT
+# ======================
+# Security Functions
+# ======================
+generate_ca_credentials() {
+    echo "Generating elliptic curve private key for certificate authority..."
+    openssl genpkey -algorithm ec -pkeyopt ec_paramgen_curve:P-256 -out "${CERT_AUTHORITY_PRIVATE}"
+    
+    echo "Creating self-signed root certificate..."
+    openssl req -key "${CERT_AUTHORITY_PRIVATE}" -new -x509 -days "${VALIDITY_CA}" \
+        -subj "/CN=clevereetech/title=${SECURITY_TAG}" -out "${ROOT_CERTIFICATE}"
+}
 
-openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:prime256v1 -out $DEVICE_KEY
-openssl req -new -key $DEVICE_KEY -subj "/CN=cleverestech /title=$TITLE" -out $DEVICE_CSR
+generate_device_credentials() {
+    echo "Generating device elliptic curve key pair..."
+    openssl genpkey -algorithm ec -pkeyopt ec_paramgen_curve:P-256 -out "${DEVICE_PRIVATE_KEY}"
 
-openssl x509 -req -in $DEVICE_CSR -CA $CA_CRT -CAkey $CA_KEY -CAcreateserial -days 365 -out $DEVICE_CRT
+    echo "Creating certificate signing request..."
+    openssl req -new -key "${DEVICE_PRIVATE_KEY}" \
+        -subj "/CN=cleverestech/title=${SECURITY_TAG}" -out "${DEVICE_CSR_FILE}"
+}
 
-DEVICE_KEY_PEM=$(sed 's/^/                /' $DEVICE_KEY)
-DEVICE_CRT_PEM=$(sed 's/^/                    /' $DEVICE_CRT)
+sign_device_certificate() {
+    echo "Issuing device certificate with CA signature..."
+    openssl x509 -req -in "${DEVICE_CSR_FILE}" -CA "${ROOT_CERTIFICATE}" \
+        -CAkey "${CERT_AUTHORITY_PRIVATE}" -CAcreateserial -days "${VALIDITY_DEV}" \
+        -out "${DEVICE_CERT_FILE}"
+}
 
-cat > $KEYBOX_XML <<EOF
+# ======================
+# XML Generation
+# ======================
+create_attestation_xml() {
+    echo "Building attestation document..."
+    
+    local formatted_privkey=$(sed 's/^/                    /' "${DEVICE_PRIVATE_KEY}")
+    local formatted_cert=$(sed 's/^/                        /' "${DEVICE_CERT_FILE}")
+
+    cat > "${KEYBOX_FILE}" <<-EOF
 <?xml version="1.0"?>
 <AndroidAttestation>
     <NumberOfKeyboxes>1</NumberOfKeyboxes>
-    <Keybox DeviceID="$DEVICE_ID">
+    <Keybox DeviceID="${TARGET_DEVICE_ID}">
         <Key algorithm="ecdsa">
             <PrivateKey format="pem">
-$DEVICE_KEY_PEM
+${formatted_privkey}
             </PrivateKey>
             <CertificateChain>
                 <NumberOfCertificates>1</NumberOfCertificates>
                 <Certificate format="pem">
-$DEVICE_CRT_PEM
+${formatted_cert}
                 </Certificate>
             </CertificateChain>
         </Key>
     </Keybox>
 </AndroidAttestation>
 EOF
+}
 
-echo "Generated Keybox asset: $KEYBOX_XML"
+# ======================
+# Main Execution
+# ======================
+main() {
+    echo "=== Cryptographic Material Generation ==="
+    generate_ca_credentials
+    generate_device_credentials
+    sign_device_certificate
+    
+    echo "=== Assembling Security Package ==="
+    create_attestation_xml
+    
+    echo "=== Operation Summary ==="
+    echo "Security package created:"
+    echo " - Root CA: ${ROOT_CERTIFICATE}"
+    echo " - Device credentials: ${DEVICE_PRIVATE_KEY}, ${DEVICE_CERT_FILE}"
+    echo " - Attestation record: ${KEYBOX_FILE}"
+    echo "Associated Device Identifier: ${TARGET_DEVICE_ID}"
+}
+
+main
