@@ -143,7 +143,7 @@ getprop ro.boot.hwc
 ```
 
 ## Telegram
-https://t.me/cleverestech
+([Clever Tech Telegram Group](https://t.me/cleverestech))
 
 > [!NOTE]
 > I do not share my own projects on github (This project is only for updates), so this is a fork. You can see whose project I forked in the changelog.
