@@ -3,4 +3,4 @@
 # **Password:** ```tryigitx```
 
 ## Why Password?
-(https://github.com/tryigit/PlayIntegrityFix/tree/Def/Leaked%20Keyboxs#known-things)
+([Google Bot](https://developers.google.com/search/docs/crawling-indexing/google-special-case-crawlers#google-safety))
