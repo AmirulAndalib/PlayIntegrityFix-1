@@ -111,10 +111,12 @@ Just move the Keybox file you found to the right directory.
 
 ## Security Patch File (PIFS)
 First you need to create it, it does not exist by default. Allows you to pass A13+ tests on EOL devices.
+
+**File Path:**
 ```
-/data/adb/tricky_store/security_patch.txt.
+/data/adb/tricky_store/security_patch.txt
 ```
-Example Usage:
+**Example Usage:**
 ```
 # os/vendor/boot security patch level 2025-01-01
 20250101
