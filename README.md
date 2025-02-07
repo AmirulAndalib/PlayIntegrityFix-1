@@ -81,17 +81,12 @@ The *PIFB version* only affects the gms app. It is simple and old.
 The *PIFS version* only affects target.txt apps and can be customized. Includes some advanced stuff.
 *Both versions* randomly replace a keybox file to avoid detection, and replace it on reboot.
 
-## Test fp/keybox without needing to reboot
-```
-su -c killall com.google.android.gms.unstable
-```
-
 ## Fingerprint File (PIFB)
 in device
 ```
 /data/adb/pif.json
 ```
-## Targer File (PIFS)
+## Target File (PIFS)
 ```
 /data/adb/tricky_store/target.txt
 ```
@@ -113,6 +108,17 @@ in device
 ```
 **Simple Strong Guide:**
 Just move the Keybox file you found to the right directory.
+
+## Security Patch File (PIFS)
+First you need to create it, it does not exist by default. Allows you to pass A13+ tests on EOL devices.
+```
+/data/adb/tricky_store/security_patch.txt.
+```
+Example Usage:
+```
+# os/vendor/boot security patch level 2025-01-01
+20250101
+```
 
 ## All Target Setting (PIFS)
 Add all apps to the target.txt list automatically. It is enabled by default and needs to be removed to customize.
