@@ -10,7 +10,7 @@ from typing import Optional, List
 import logging
 import sys
 import json
-import subprocess
+import time
 
 # Initialize colorama
 init(autoreset=True)
@@ -34,11 +34,22 @@ args = parser.parse_args()
 def fetch_crl(url: str, timeout: int = TIMEOUT) -> Optional[dict]:
     """Fetch Certificate Revocation List (CRL) with cache and cookies disabled."""
     try:
-        # Download CRL directly to a variable using subprocess
-        process = subprocess.Popen(['curl', '-s', url], stdout=subprocess.PIPE)
-        output, _ = process.communicate()
-        crl = json.loads(output)
-        return crl
+        timestamp = int(time.time())
+        headers = {
+            "Cache-Control": "max-age=0, no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+        params = {"ts": timestamp}
+        
+        response = requests.get(
+            url,
+            headers=headers,
+            params=params,
+            timeout=timeout
+        )
+        response.raise_for_status()
+        return response.json()
     except Exception as e:
         logging.error(f"Failed to fetch or parse CRL: {e}")
         return None
@@ -73,12 +84,11 @@ def main():
 
     directory = args.path
     strong_keyboxes_dir = os.path.join(directory, "Strong Keyboxes")
-    os.makedirs(strong_keyboxes_dir, exist_ok=True)  # Create the directory if it doesn't exist
+    os.makedirs(strong_keyboxes_dir, exist_ok=True)
 
     for filename in os.listdir(directory):
         file_path = os.path.join(directory, filename)
 
-        # Skip non-.xml files
         if not filename.lower().endswith('.xml'):
             continue
 
@@ -110,7 +120,6 @@ def main():
             logging.info(f"  EC Cert Serial Number: {ec_cert_sn}")
             logging.info(f"  RSA Cert Serial Number: {rsa_cert_sn}")
             valid_keyboxes += 1
-            # Move the valid keybox file to the "Strong Keyboxes" folder
             os.rename(file_path, os.path.join(strong_keyboxes_dir, filename))
 
     # Summary Results
