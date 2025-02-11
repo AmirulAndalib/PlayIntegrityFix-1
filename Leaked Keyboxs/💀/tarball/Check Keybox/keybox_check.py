@@ -11,6 +11,7 @@ import logging
 import sys
 import json
 import time
+import shutil
 
 # Initialize colorama
 init(autoreset=True)
@@ -84,7 +85,10 @@ def main():
 
     directory = args.path
     strong_keyboxes_dir = os.path.join(directory, "Strong Keyboxes")
+    revoked_keyboxes_dir = os.path.join(directory, "Revoked Keyboxes")
+    
     os.makedirs(strong_keyboxes_dir, exist_ok=True)
+    os.makedirs(revoked_keyboxes_dir, exist_ok=True)
 
     for filename in os.listdir(directory):
         file_path = os.path.join(directory, filename)
@@ -99,6 +103,7 @@ def main():
             logging.info(f"\n{Fore.YELLOW}{BOLD}[INVALID] {filename}")
             logging.info(f"  Reason: Not enough certificate data.")
             invalid_keyboxes += 1
+            shutil.move(file_path, os.path.join(revoked_keyboxes_dir, filename))
             continue
 
         ec_cert_sn = parse_cert(certs[0])
@@ -108,6 +113,7 @@ def main():
             logging.info(f"\n{Fore.RED}{BOLD}[ERROR] {filename}")
             logging.info(f"  Reason: Certificate parsing failed.")
             invalid_keyboxes += 1
+            shutil.move(file_path, os.path.join(revoked_keyboxes_dir, filename))
             continue
 
         if any(sn in crl["entries"] for sn in (ec_cert_sn, rsa_cert_sn)):
@@ -115,12 +121,13 @@ def main():
             logging.info(f"  EC Cert Serial Number: {ec_cert_sn}")
             logging.info(f"  RSA Cert Serial Number: {rsa_cert_sn}")
             revoked_keyboxes += 1
+            shutil.move(file_path, os.path.join(revoked_keyboxes_dir, filename))
         else:
             logging.info(f"\n{Fore.GREEN}{BOLD}[VALID] {filename}")
             logging.info(f"  EC Cert Serial Number: {ec_cert_sn}")
             logging.info(f"  RSA Cert Serial Number: {rsa_cert_sn}")
             valid_keyboxes += 1
-            os.rename(file_path, os.path.join(strong_keyboxes_dir, filename))
+            shutil.copy2(file_path, os.path.join(strong_keyboxes_dir, filename))
 
     # Summary Results
     logging.info("\n" + "=" * 40)
