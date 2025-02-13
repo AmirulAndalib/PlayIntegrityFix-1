@@ -6,12 +6,11 @@ import xml.etree.ElementTree as ET
 from cryptography import x509
 import argparse
 from colorama import Fore, Style, init
-from typing import Optional, List
+from typing import List, Optional  # Optional'ı ekledik
 import logging
 import sys
-import json
-import time
 import shutil
+import time
 
 # Initialize colorama
 init(autoreset=True)
@@ -87,6 +86,7 @@ def main():
     strong_keyboxes_dir = os.path.join(directory, "Strong Keyboxes")
     revoked_keyboxes_dir = os.path.join(directory, "Revoked Keyboxes")
     
+    # Create target directories if they don't exist
     os.makedirs(strong_keyboxes_dir, exist_ok=True)
     os.makedirs(revoked_keyboxes_dir, exist_ok=True)
 
@@ -99,6 +99,7 @@ def main():
         total_keyboxes += 1
         certs = extract_certs(file_path)
 
+        # Handle invalid keyboxes (insufficient certificates)
         if len(certs) < 4:
             logging.info(f"\n{Fore.YELLOW}{BOLD}[INVALID] {filename}")
             logging.info(f"  Reason: Not enough certificate data.")
@@ -106,9 +107,11 @@ def main():
             shutil.move(file_path, os.path.join(revoked_keyboxes_dir, filename))
             continue
 
+        # Parse certificates
         ec_cert_sn = parse_cert(certs[0])
         rsa_cert_sn = parse_cert(certs[3])
 
+        # Handle parsing errors
         if not ec_cert_sn or not rsa_cert_sn:
             logging.info(f"\n{Fore.RED}{BOLD}[ERROR] {filename}")
             logging.info(f"  Reason: Certificate parsing failed.")
@@ -116,6 +119,7 @@ def main():
             shutil.move(file_path, os.path.join(revoked_keyboxes_dir, filename))
             continue
 
+        # Check revocation status
         if any(sn in crl["entries"] for sn in (ec_cert_sn, rsa_cert_sn)):
             logging.info(f"\n{Fore.RED}{BOLD}[REVOKED] {filename}")
             logging.info(f"  EC Cert Serial Number: {ec_cert_sn}")
